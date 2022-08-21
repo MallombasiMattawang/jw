@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,7 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login']]);
+        $this->middleware('auth:api', ['except' => ['login', 'register']]);
     }
 
     public function register()
@@ -24,24 +25,23 @@ class AuthController extends Controller
         $validator = Validator::make(request()->all(), [
             'name' => 'required',
             'email' => 'required|email|unique:users',
-            'password' => 'required',
+            'password' => 'required|confirmed',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->messages());
+            return response()->json($validator->messages(), 422);
         }
 
         $user = User::create([
             'name' => request('name'),
             'email' => request('email'),
-            'password' => Hash::make(request('password')), 
+            'password' => Hash::make(request('password')),
         ]);
-        if($user) {
+        if ($user) {
             return response()->json(['message' => 'Successfully Register']);
         } else {
             return response()->json(['message' => 'Error Register']);
         }
-
     }
 
     /**
@@ -51,6 +51,14 @@ class AuthController extends Controller
      */
     public function login()
     {
+        $validator = Validator::make(request()->all(), [            
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->messages(), 402);
+        }
         $credentials = request(['email', 'password']);
 
         if (!$token = auth()->attempt($credentials)) {
